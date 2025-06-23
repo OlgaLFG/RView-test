@@ -1,36 +1,36 @@
-
 import streamlit as st
 from PIL import Image
 import os
 from collections import defaultdict
 
-# Автоопределение региона по имени и размерам
 def classify_region(filename, image=None):
     fname = filename.lower()
 
-    # 1. По ключевым словам в названии
     if any(k in fname for k in ["cerv", "c-spine"]):
         return "Cervical Spine"
     elif any(k in fname for k in ["thor", "t-spine"]):
         return "Thoracic Spine"
     elif any(k in fname for k in ["lum", "l-spine"]):
         return "Lumbar Spine"
-    elif "sacro" in fname or "si" in fname or "sij" in fname:
-        return "SI Joints / Pelvis"
-    elif "pelvis" in fname or "iliac" in fname:
-        return "SI Joints / Pelvis"
-    elif "hand" in fname or "mcp" in fname or "wrist" in fname:
+    elif any(k in fname for k in ["sacro", "sij", "si", "pelvis", "iliac"]):
+        return "Pelvis / SI Joints"
+    elif any(k in fname for k in ["hand", "mcp", "wrist", "fingers"]):
         return "Hands"
-    elif "foot" in fname or "mtp" in fname:
+    elif any(k in fname for k in ["foot", "mtp", "toes", "hallux"]):
         return "Feet"
-    elif "knee" in fname:
+    elif any(k in fname for k in ["knee"]):
         return "Knees"
-    elif "shoulder" in fname:
+    elif any(k in fname for k in ["shoulder", "ac joint"]):
         return "Shoulders"
-    elif "hip" in fname:
+    elif any(k in fname for k in ["hip"]):
         return "Hips"
+    elif any(k in fname for k in ["elbow", "forearm", "radius", "ulna"]):
+        return "Elbows / Forearms"
+    elif any(k in fname for k in ["ankle"]):
+        return "Ankles"
+    elif "bcr-2017" in fname:
+        return "Hands or Feet (from BCR-2017)"
 
-    # 2. По размеру изображения
     if image:
         width, height = image.size
         ratio = height / width if width else 0
@@ -45,18 +45,18 @@ def classify_region(filename, image=None):
             return "Chest or Pelvis (Square)"
     return "Unknown"
 
-st.set_page_config(page_title="RheumaView-lite v3", page_icon="🧠", layout="wide")
-st.title("🧠 RheumaView-lite Debug App v3")
-st.markdown("Загрузите изображения. Приложение попытается определить анатомический регион по названию и/или структуре изображения.")
+st.set_page_config(page_title="RheumaView-lite v3.1", page_icon="🦴", layout="wide")
+st.title("🦴 RheumaView-lite Debug App v3.1")
+st.markdown("Upload radiographic images. The app will attempt to auto-classify anatomical regions using filename and image structure.")
 
 uploaded_files = st.file_uploader(
-    "Загрузите изображения (JPG, PNG, WEBP, BMP, TIFF)", 
+    "Upload files (JPG, PNG, WEBP, BMP, TIFF)", 
     type=["jpg", "jpeg", "png", "webp", "bmp", "tif", "tiff"], 
     accept_multiple_files=True
 )
 
 if uploaded_files:
-    st.success(f"Загружено файлов: {len(uploaded_files)}")
+    st.success(f"{len(uploaded_files)} file(s) uploaded.")
 
     grouped = defaultdict(list)
     for file in uploaded_files:
@@ -68,13 +68,16 @@ if uploaded_files:
             grouped["Unreadable"].append((file.name, None))
 
     for region, entries in grouped.items():
-        st.subheader(f"📂 {region} – {len(entries)} файл(ов)")
+        st.subheader(f"📂 {region} – {len(entries)} file(s)")
         cols = st.columns(3)
         for i, (fname, img) in enumerate(entries):
             with cols[i % 3]:
                 if img:
                     st.image(img, caption=fname, width=250)
                 else:
-                    st.warning(f"Не удалось открыть: {fname}")
+                    st.warning(f"Unreadable: {fname}")
+
+    st.markdown("---")
+    st.info("⬇️ READY button and report generation will be added in the next version.")
 else:
-    st.info("Файлы не загружены.")
+    st.info("No files uploaded yet.")
