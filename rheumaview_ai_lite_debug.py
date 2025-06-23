@@ -1,6 +1,5 @@
 import streamlit as st
 from PIL import Image
-import os
 from collections import defaultdict
 
 def classify_region(filename, image=None):
@@ -45,15 +44,21 @@ def classify_region(filename, image=None):
             return "Chest or Pelvis (Square)"
     return "Unknown"
 
-st.set_page_config(page_title="RheumaView-lite v3.1", page_icon="🦴", layout="wide")
-st.title("🦴 RheumaView-lite Debug App v3.1")
-st.markdown("Upload radiographic images. The app will attempt to auto-classify anatomical regions using filename and image structure.")
+st.set_page_config(page_title="RheumaView-lite v4", page_icon="🩻", layout="wide")
+st.title("🩻 RheumaView-lite Debug App v4")
+st.markdown("Upload radiographic images. The app will classify regions and generate a basic report upon confirmation.")
 
 uploaded_files = st.file_uploader(
     "Upload files (JPG, PNG, WEBP, BMP, TIFF)", 
     type=["jpg", "jpeg", "png", "webp", "bmp", "tif", "tiff"], 
     accept_multiple_files=True
 )
+
+# Initialize session state
+if "grouped_data" not in st.session_state:
+    st.session_state.grouped_data = None
+if "report_ready" not in st.session_state:
+    st.session_state.report_ready = False
 
 if uploaded_files:
     st.success(f"{len(uploaded_files)} file(s) uploaded.")
@@ -67,17 +72,29 @@ if uploaded_files:
         except:
             grouped["Unreadable"].append((file.name, None))
 
+    st.session_state.grouped_data = grouped
+
     for region, entries in grouped.items():
         st.subheader(f"📂 {region} – {len(entries)} file(s)")
-        cols = st.columns(3)
+        cols = st.columns(4)
         for i, (fname, img) in enumerate(entries):
-            with cols[i % 3]:
+            with cols[i % 4]:
                 if img:
-                    st.image(img, caption=fname, width=250)
+                    st.image(img, caption=fname, width=180)
                 else:
                     st.warning(f"Unreadable: {fname}")
 
-    st.markdown("---")
-    st.info("⬇️ READY button and report generation will be added in the next version.")
+    if st.button("✅ READY – Generate Report"):
+        st.session_state.report_ready = True
+
+    if st.session_state.report_ready:
+        st.markdown("---")
+        st.subheader("📝 Basic Report Summary")
+        total = sum(len(v) for v in grouped.values())
+        st.write(f"**Total images:** {total}")
+        for region, entries in grouped.items():
+            st.write(f"- **{region}**: {len(entries)} file(s)")
+
+        st.success("Report ready. Export and AI-enhanced interpretation will be available in the next version.")
 else:
     st.info("No files uploaded yet.")
