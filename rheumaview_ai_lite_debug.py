@@ -4,8 +4,8 @@ from collections import defaultdict
 
 REGION_LIST = [
     "Cervical Spine", "Thoracic Spine", "Lumbar Spine",
-    "Pelvis / SI Joints", "Hips", "Knees", "Feet", "Hands",
-    "Shoulders", "Elbows / Forearms", "Wrists", "Unknown"
+    "Pelvis / SI Joints", "Hips", "Knees", "Ankles", "Feet", "Hands",
+    "Shoulders", "Elbows / Forearms", "Wrists", "Long Bones", "Unknown"
 ]
 
 def predict_region(image):
@@ -15,7 +15,7 @@ st.set_page_config(page_title="RheumaView-lite v4.2-fallback-select", page_icon=
 st.title("🦴 RheumaView-lite v4.2 – Fallback Select Enabled")
 st.markdown("Upload radiographs. Manual region override is enabled if prediction fails.")
 
-uploaded_files = st.file_uploader("Upload X-ray images", type=["jpg", "jpeg", "png", "bmp", "tif", "tiff"], accept_multiple_files=True)
+uploaded_files = st.file_uploader("Upload X-ray images", type=["jpg", "webp", "jpeg", "png", "bmp", "tif", "tiff"], accept_multiple_files=True)
 
 if "user_override" not in st.session_state:
     st.session_state.user_override = {}
