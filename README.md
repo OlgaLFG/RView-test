@@ -1,11 +1,12 @@
-# RView-test: Пошаговая отладка и сборка с нуля
+# RheumaView Lite (Streamlit + PyTorch)
 
-Этот репозиторий предназначен для тестовой отладки и постепенной сборки приложения RheumaView. 
-Используется в рамках проекта Radiology Assistant Olga Goodman.
+This is a minimal working prototype of the RheumaView Lite system.
 
-## Структура
-- `rheumaview_ai_lite_debug.py` — основной скрипт (загружается отдельно)
-- `README.md` — описание проекта
+## 🔧 How to run
 
-## Цель
-Отладка и пошаговая сборка RheumaView с изоляцией изменений, логированием прогресса и минимизацией багов.
+```bash
+# Step 1: Install dependencies
+pip install -r requirements.txt
+
+# Step 2: Run the app
+streamlit run app_streamlit.py
