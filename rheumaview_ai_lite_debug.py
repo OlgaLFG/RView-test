@@ -1,3 +1,4 @@
+
 import streamlit as st
 import torch
 from torchvision import transforms
@@ -31,15 +32,18 @@ if uploaded_files:
 
         # Convert to RGB to match model expectation
         image_rgb = image.convert("RGB")
-        top3 = predict_region(image_rgb)
-        top_label = CLASS_NAMES[top3[0][0]]
+        try:
+            top3 = predict_region(image_rgb)
+            top_label = CLASS_NAMES[top3[0][0]]
+            st.markdown(f"**Top prediction:** {top_label}")
+            st.markdown("**Confidence breakdown:**")
+            for idx, prob in top3:
+                st.markdown(f"- {CLASS_NAMES[idx]}: {prob:.2%}")
+            manual = st.selectbox(f"Override region for {file.name}?", CLASS_NAMES, index=top3[0][0], key=file.name)
+        except Exception as e:
+            st.error(f"Prediction failed for {file.name}: {e}")
+            manual = st.selectbox(f"Manual region for {file.name} (prediction failed)", CLASS_NAMES, key=file.name)
 
-        st.markdown(f"**Top prediction:** {top_label}")
-        st.markdown("**Confidence breakdown:**")
-        for idx, prob in top3:
-            st.markdown(f"- {CLASS_NAMES[idx]}: {prob:.2%}")
-
-        manual = st.selectbox(f"Override region for {file.name}?", CLASS_NAMES, index=top3[0][0], key=file.name)
         results.append((file.name, manual))
 
 # Generate EMR Summary
