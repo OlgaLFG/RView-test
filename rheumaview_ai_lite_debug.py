@@ -60,12 +60,24 @@ st.set_page_config(page_title="RheumaView v4.2-region-ai", page_icon="🧠", lay
 st.title("🧠 RheumaView-lite v4.2 Region Classifier")
 st.markdown("Visual AI classifier with fallback and AI/manual reporting.")
 
+
+# Reset uploaded files with one-time reminder
 st.markdown("### 📁 File Upload Control")
+
+if "show_reset_reminder" not in st.session_state:
+    st.session_state["show_reset_reminder"] = False
+
 if st.button("🔄 Reset Uploaded Files"):
     if "upload" in st.session_state:
         del st.session_state["upload"]
-    st.warning("⚠️ Please refresh the page (F5) to fully clear the upload list.")
+    st.session_state["show_reset_reminder"] = True
     st.rerun()
+
+# Reminder appears after rerun if triggered
+if st.session_state.get("show_reset_reminder", False):
+    st.warning("⚠️ Please refresh the page (F5) to fully clear the upload list.")
+
+
 
 # File upload
 uploaded_files = st.file_uploader(
