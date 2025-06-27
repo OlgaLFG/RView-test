@@ -6,7 +6,7 @@ from inference_core import predict_region
 from docx import Document
 from datetime import datetime
 
-# Updated class labels
+# Custom class labels
 CLASS_NAMES = [
     "Cervical Spine", "Thoracic Spine", "Lumbar Spine", "Pelvis/SI Joints/ Sacrum", 
     "Hips", "Knees", "Ankles/Feet", 
@@ -29,16 +29,8 @@ if uploaded_files:
         image = Image.open(file).convert("L")
         st.image(image, caption=f"Preview: {file.name}", width=120)
 
-        # Local transform and tensor generation
-        transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))
-        ])
-        tensor = transform(image).unsqueeze(0)
-
-        # Pass tensor to inference_core
-        top3 = predict_region(tensor)
+        # Pass raw PIL image to predict_region (which handles transform internally)
+        top3 = predict_region(image)
         top_label = CLASS_NAMES[top3[0][0]]
 
         st.markdown(f"**Top prediction:** {top_label}")
@@ -46,7 +38,6 @@ if uploaded_files:
         for idx, prob in top3:
             st.markdown(f"- {CLASS_NAMES[idx]}: {prob:.2%}")
 
-        # Allow manual override
         manual = st.selectbox(f"Override region for {file.name}?", CLASS_NAMES, index=top3[0][0], key=file.name)
         results.append((file.name, manual))
 
