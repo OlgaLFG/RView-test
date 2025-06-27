@@ -1,8 +1,9 @@
 import streamlit as st
 import torch
+import torch.nn as nn
+from torchvision import transforms
 from PIL import Image
 from collections import defaultdict
-from inference_core import region_report
 
 # Dummy model for grayscale images (1 channel)
 class DummyRegionModel(torch.nn.Module):
@@ -26,83 +27,119 @@ def load_model():
 REGION_LABELS = [
     "Cervical Spine", "Thoracic Spine", "Lumbar Spine",
     "Pelvis/SI/Sacrum", "Hands/Wrists", "Elbows", "Shoulders",
-    "Hips", "Knees", "Ankles/Feet", "Feet", "Long Bones"
+    "Hips", "Knees", "Ankles/Feet", "Long Bones"
 ]
-CONFIDENCE_THRESHOLD = 0.45
+CONFIDENCE_THRESHOLD = 0.65
 
-model = load_model()
+# Image transform
+def preprocess(image):
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.Grayscale(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5], std=[0.5])
+    ])
+    return transform(image)
 
-# Upload and process files
-st.title("🧠 RheumaView Region Classifier\n(Lite Debug Mode)")
-st.markdown("Upload X-ray images")
+# Predict region
+@st.cache_data(show_spinner=False)
+def predict_region(image):
+    model = load_model()
+    input_tensor = preprocess(image).unsqueeze(0)
+    with torch.no_grad():
+        output = model(input_tensor)
+        probs = torch.nn.functional.softmax(output[0], dim=0)
+        sorted_probs, indices = torch.topk(probs, 3)
+        result = [(REGION_LABELS[i], float(sorted_probs[n])) for n, i in enumerate(indices)]
+        return result
 
+# Simulated region report generator
+def region_report(region):
+    return f"Findings are consistent with radiographic assessment of the **{region}**. No acute abnormalities identified. Recommend clinical correlation."
+
+# Page config
+st.set_page_config(page_title="RheumaView v4.2-region-ai", page_icon="🧠", layout="wide")
+st.title("🧠 RheumaView Region Classifier")
+st.markdown("(Lite Debug Mode)")
+
+# File reset block
+st.markdown("### 🗂 File Upload Control")
+if st.button("🔁 Reset Uploaded Files"):
+    if "upload" in st.session_state:
+        del st.session_state["upload"]
+    st.session_state["once_reminder"] = True
+    st.rerun()
+
+# File upload
 uploaded_files = st.file_uploader(
-    "Drag and drop files here", accept_multiple_files=True, type=["png", "jpg", "jpeg", "webp"]
+    "Upload X-rays",
+    type=["jpg", "jpeg", "png", "webp", "tif", "tiff"],
+    accept_multiple_files=True,
+    key="upload"
 )
 
-grouped_files = defaultdict(list)
+if st.session_state.get("once_reminder"):
+    st.warning("⚠️ Please refresh the page (F5) to fully clear the upload list.")
+    del st.session_state["once_reminder"]
+
+grouped = defaultdict(list)
+if uploaded_files:
+    for file in uploaded_files:
+        image = Image.open(file)
+        predictions = predict_region(image)
+        top_label, top_conf = predictions[0]
+
+        if top_conf < CONFIDENCE_THRESHOLD:
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                st.image(image, width=120)
+            with col2:
+                selected = st.selectbox(
+                    f"Select region for {file.name} (low confidence)",
+                    REGION_LABELS,
+                    key=file.name
+                )
+            region = selected
+            st.session_state.region_override = st.session_state.get("region_override", {})
+            st.session_state.region_override[file.name] = "manual"
+        else:
+            region = top_label
+            st.session_state.region_override = st.session_state.get("region_override", {})
+            st.session_state.region_override[file.name] = "AI"
+
+        grouped[region].append((file.name, image.copy(), predictions))
+
+# Display grouped images
+displayed_files = set()
+st.markdown("---")
+st.subheader("📁 Grouped Files by Region")
+
+for region, entries in grouped.items():
+    unique_entries = [e for e in entries if e[0] not in displayed_files]
+    if not unique_entries:
+        continue
+    st.markdown(f"**{region} — {len(unique_entries)} file(s)**")
+    cols = st.columns(3)
+    for i, (fname, img, preds) in enumerate(unique_entries):
+        displayed_files.add(fname)
+        with cols[i % 3]:
+            st.image(img, caption=f"{fname}", width=180)
+            st.caption(", ".join([f"{lbl} ({conf:.2f})" for lbl, conf in preds]))
+
+# Report Generator Section
+st.markdown("---")
+st.subheader("📝 Report Generator")
 
 if uploaded_files:
-    st.markdown("---")
-    st.subheader("📁 Grouped Files by Region")
+    if st.button("✅ READY – Generate Report"):
+        st.success("📄 Report generation coming soon.")
+else:
+    st.info("No files uploaded.")
 
-    for uploaded_file in uploaded_files:
-        image = Image.open(uploaded_file).convert("L").resize((224, 224))
-        image_tensor = torch.tensor([[[list(image.getdata())[i * 224:(i + 1) * 224] for i in range(224)]]], dtype=torch.float32) / 255.0
-        outputs = model(image_tensor)
-        confidences = torch.softmax(outputs, dim=1).squeeze().tolist()
-        for idx, conf in enumerate(confidences):
-            if conf > CONFIDENCE_THRESHOLD:
-                region = REGION_LABELS[idx % len(REGION_LABELS)]
-                grouped_files[region].append((uploaded_file.name, image, conf))
-
-    displayed_files = set()
-    for region, entries in grouped_files.items():
-        unique_entries = [e for e in entries if e[0] not in displayed_files]
-        if not unique_entries:
-            continue
-        st.markdown(f"**{region}** – {len(unique_entries)} file(s)**")
-        cols = st.columns(3)
-        for i, (fname, img, conf) in enumerate(unique_entries):
-            displayed_files.add(fname)
-            with cols[i % 3]:
-                st.image(img, caption=f"{fname}", width=180)
-                st.caption(f"{conf:.2f}")
-
-st.markdown("---")
-st.subheader("🧠 Generate Report by Region")
-
-region_options = ["Multiple Regions"] + REGION_LABELS
-selected_region = st.selectbox("Choose region to generate report for:", region_options)
-
-def summarize_text(text, max_chars=700):
-    if len(text) <= max_chars:
-        return text
-    paragraphs = text.split("\n")
-    summary = ""
-    for para in paragraphs:
-        if len(summary) + len(para) + 1 <= max_chars:
-            summary += para + "\n"
-        else:
-            break
-    return summary.strip()
+# Always show EMR summary block
+st.markdown("### 🧠 Generate Report by Region")
+selected_region = st.selectbox("Choose region to generate report for:", REGION_LABELS)
 
 if st.button("Generate EMR Summary"):
-    if selected_region == "Multiple Regions":
-        combined_report = ""
-        for region in grouped_files.keys():
-            report = region_report(region)
-            combined_report += f"**{region}**:\n{report}\n\n"
-        summary = summarize_text(combined_report, max_chars=1000)
-        st.success(f"📄 EMR Summary for multiple regions:\n\n{summary}")
-    else:
-        report = region_report(selected_region)
-        summary = summarize_text(report, max_chars=700)
-        st.success(f"📄 EMR Summary for **{selected_region}**:\n\n{summary}")
-else:
-    if not uploaded_files:
-        st.subheader("📄 Report Generator")
-        if st.button("✅ READY – Generate Report"):
-            st.success("📝 Report generation coming soon.")
-        else:
-            st.info("No files uploaded.")
+    report = region_report(selected_region)
+    st.success(f"📝 EMR Summary for **{selected_region}**:\n\n{report}")
