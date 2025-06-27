@@ -60,14 +60,12 @@ st.set_page_config(page_title="RheumaView v4.2-region-ai", page_icon="🧠", lay
 st.title("🧠 RheumaView-lite v4.2 Region Classifier")
 st.markdown("Visual AI classifier with fallback and AI/manual reporting.")
 
-# Reset uploaded files
-st.markdown("### 🗂️ File Upload Control")
-if st.button("🔁 Reset Uploaded Files"):
+st.markdown("### 📁 File Upload Control")
+if st.button("🔄 Reset Uploaded Files"):
     if "upload" in st.session_state:
         del st.session_state["upload"]
-        st.rerun() 
-
-
+    st.warning("⚠️ Please refresh the page (F5) to fully clear the upload list.")
+    st.rerun()
 
 # File upload
 uploaded_files = st.file_uploader(
