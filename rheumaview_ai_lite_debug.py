@@ -1,3 +1,4 @@
+
 import streamlit as st
 from PIL import Image
 from collections import defaultdict
@@ -30,6 +31,7 @@ def load_model():
     model.load_state_dict(torch.load("region_model.pt", map_location="cpu"))
     model.eval()
     return model
+
 def region_report(region_label):
     templates = {
         "Cervical Spine": "Straightening of cervical lordosis. Degenerative spondylosis suspected.",
@@ -41,7 +43,6 @@ def region_report(region_label):
     }
     return templates.get(region_label, "No region-specific findings available.")
 
-
 def predict_region(image):
     model = load_model()
     preprocess = transforms.Compose([
@@ -50,8 +51,6 @@ def predict_region(image):
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
-   
-
     input_tensor = preprocess(image).unsqueeze(0)
     with torch.no_grad():
         output = model(input_tensor)
@@ -87,14 +86,25 @@ if uploaded_files:
 
         grouped[region].append((file.name, image.copy(), predictions))
 
+    # Визуализация — только одно изображение на файл
+    displayed_files = set()
     for region, entries in grouped.items():
-        st.subheader(f"{region} — {len(entries)} file(s)")
+        unique_entries = [e for e in entries if e[0] not in displayed_files]
+        if not unique_entries:
+            continue
+
+        st.subheader(f"{region} — {len(unique_entries)} file(s)")
         cols = st.columns(3)
-        for i, (fname, img, preds) in enumerate(entries):
+
+        for i, (fname, img, preds) in enumerate(unique_entries):
+            displayed_files.add(fname)
             with cols[i % 3]:
                 st.image(img, caption=fname, width=180)
                 st.markdown(f"**Top prediction:** {preds[0][0]} ({preds[0][1]*100:.1f}%)")
-                st.markdown(f"*Other:* {preds[1][0]} ({preds[1][1]*100:.1f}%), {preds[2][0]} ({preds[2][1]*100:.1f}%)")
+                st.markdown(
+                    f"*Other:* {preds[1][0]} ({preds[1][1]*100:.1f}%), "
+                    f"{preds[2][0]} ({preds[2][1]*100:.1f}%)"
+                )
 
     if st.button("✅ READY – Generate Report"):
         st.subheader("📝 Report Summary")
@@ -103,7 +113,7 @@ if uploaded_files:
             for fname, _, _ in entries:
                 src = st.session_state.region_override.get(fname, "AI")
                 st.markdown(f"  - {fname} — source: {src}")
-                st.markdown(f"_{region_report(region)}_") 
+                st.markdown(f"_{region_report(region)}_")
 else:
     st.info("No files uploaded.")
     st.markdown("### 📄 Generate Report by Region")
@@ -112,4 +122,3 @@ else:
 if st.button("Generate EMR Summary"):
     report = region_report(selected_region)
     st.success(f"📝 EMR Summary for **{selected_region}**:\n\n{report}")
-
