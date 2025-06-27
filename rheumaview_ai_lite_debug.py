@@ -2,16 +2,15 @@ import streamlit as st
 import torch
 from torchvision import transforms
 from PIL import Image
-import io
 from inference_core import predict_region
 from docx import Document
 from datetime import datetime
 
-# Class names mapping
+# Updated class labels as per user's schema
 CLASS_NAMES = [
-    "Cervical Spine", "Thoracic Spine", "Lumbar Spine", "Pelvis/SI Joints",
-    "Hips", "Knees", "Ankles", "Feet",
-    "Shoulders", "Elbows", "Wrists", "Hands", "Long bones"
+    "Cervical Spine", "Thoracic Spine", "Lumbar Spine", "Pelvis/SI Joints/ Sacrum", 
+    "Hips", "Knees", "Ankles/Feet", 
+    "Shoulders", "Elbows", "Hands/Wrists", "Long bones"
 ]
 
 st.set_page_config(page_title="RheumaView Lite", layout="centered")
@@ -23,37 +22,32 @@ uploaded_files = st.file_uploader("Upload X-ray images", accept_multiple_files=T
 results = []
 
 if uploaded_files:
-    st.subheader("Image Preview and Predictions")
+    st.markdown(f"**Total files uploaded:** {len(uploaded_files)}")
+    st.subheader("Image Preview, Prediction, and Manual Override")
+
     for file in uploaded_files:
         image = Image.open(file).convert("L")
-        st.image(image, caption=f"Preview: {file.name}", width=300)
+        st.image(image, caption=f"Preview: {file.name}", width=120)
 
-        # Image preprocessing
-        transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))
-        ])
-        tensor = transform(image).unsqueeze(0)
-
-        # Prediction
-        top3 = predict_region(tensor)
-
+        # Region prediction (image only, transform handled in inference_core)
+        top3 = predict_region(image)
         top_label = CLASS_NAMES[top3[0][0]]
+
         st.markdown(f"**Top prediction:** {top_label}")
         st.markdown("**Confidence breakdown:**")
         for idx, prob in top3:
             st.markdown(f"- {CLASS_NAMES[idx]}: {prob:.2%}")
 
-        results.append((file.name, top3))
+        # Allow manual override
+        manual = st.selectbox(f"Override region for {file.name}?", CLASS_NAMES, index=top3[0][0], key=file.name)
+        results.append((file.name, manual))
 
-# Generate EMR summary
+# Generate EMR Summary
 if st.button("Generate EMR Summary"):
     emr_text = []
     region_count = {}
-    for _, top3 in results:
-        top_label = CLASS_NAMES[top3[0][0]]
-        region_count[top_label] = region_count.get(top_label, 0) + 1
+    for _, region in results:
+        region_count[region] = region_count.get(region, 0) + 1
 
     for region, count in region_count.items():
         emr_text.append(f"{region} – {count} view(s)")
@@ -69,10 +63,16 @@ if st.button("Generate Report (.docx)"):
     doc.add_paragraph("Curated by Dr. Olga Goodman")
     doc.add_paragraph(f"Date: {datetime.today().strftime('%Y-%m-%d')}")
 
-    for file_name, top3 in results:
-        doc.add_heading(file_name, level=2)
-        for idx, prob in top3:
-            doc.add_paragraph(f"{CLASS_NAMES[idx]}: {prob:.2%}")
+    region_groups = {}
+    for file_name, region in results:
+        if region not in region_groups:
+            region_groups[region] = []
+        region_groups[region].append(file_name)
+
+    for region, files in region_groups.items():
+        doc.add_heading(region, level=2)
+        for fname in files:
+            doc.add_paragraph(f"- {fname}")
 
     output_path = "/mnt/data/rheumaview_report.docx"
     doc.save(output_path)
