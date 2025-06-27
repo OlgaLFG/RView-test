@@ -29,8 +29,9 @@ if uploaded_files:
         image = Image.open(file).convert("L")
         st.image(image, caption=f"Preview: {file.name}", width=120)
 
-        # Pass raw PIL image to predict_region (which handles transform internally)
-        top3 = predict_region(image)
+        # Convert to RGB to match model expectation
+        image_rgb = image.convert("RGB")
+        top3 = predict_region(image_rgb)
         top_label = CLASS_NAMES[top3[0][0]]
 
         st.markdown(f"**Top prediction:** {top_label}")
