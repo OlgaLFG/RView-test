@@ -30,7 +30,7 @@ def load_model():
     model.load_state_dict(torch.load("region_model.pt", map_location="cpu"))
     model.eval()
     return model
- def region_report(region_label):
+def region_report(region_label):
     templates = {
         "Cervical Spine": "Straightening of cervical lordosis. Degenerative spondylosis suspected.",
         "Thoracic Spine": "No acute findings in thoracic spine. Vertebral body heights preserved.",
