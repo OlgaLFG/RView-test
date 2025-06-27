@@ -39,6 +39,17 @@ def predict_region(image):
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
+    def region_report(region_label):
+    templates = {
+        "Cervical Spine": "Straightening of cervical lordosis. Degenerative spondylosis suspected.",
+        "Thoracic Spine": "No acute findings in thoracic spine. Vertebral body heights preserved.",
+        "Lumbar Spine": "Lumbar spine with facet sclerosis and disc space narrowing at L4–L5.",
+        "Feet": "No erosions or joint space narrowing noted in forefoot views.",
+        "Pelvis / SI Joints": "Sacroiliac joints are symmetric. Mild subchondral sclerosis without erosions.",
+        "Hands": "No erosions or joint space narrowing. Bone mineralization is preserved.",
+    }
+    return templates.get(region_label, "No region-specific findings available.")
+
     input_tensor = preprocess(image).unsqueeze(0)
     with torch.no_grad():
         output = model(input_tensor)
