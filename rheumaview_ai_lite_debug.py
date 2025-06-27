@@ -6,7 +6,7 @@ from inference_core import predict_region
 from docx import Document
 from datetime import datetime
 
-# Updated class labels as per user's schema
+# Updated class labels
 CLASS_NAMES = [
     "Cervical Spine", "Thoracic Spine", "Lumbar Spine", "Pelvis/SI Joints/ Sacrum", 
     "Hips", "Knees", "Ankles/Feet", 
@@ -29,8 +29,16 @@ if uploaded_files:
         image = Image.open(file).convert("L")
         st.image(image, caption=f"Preview: {file.name}", width=120)
 
-        # Region prediction (image only, transform handled in inference_core)
-        top3 = predict_region(image)
+        # Local transform and tensor generation
+        transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+        tensor = transform(image).unsqueeze(0)
+
+        # Pass tensor to inference_core
+        top3 = predict_region(tensor)
         top_label = CLASS_NAMES[top3[0][0]]
 
         st.markdown(f"**Top prediction:** {top_label}")
