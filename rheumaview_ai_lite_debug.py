@@ -32,41 +32,45 @@ CONFIDENCE_THRESHOLD = 0.65
 
 # Image transform
 def preprocess(image):
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-    ])
-    image = image.convert("L")
-    return transform(image).unsqueeze(0)
+    image = image.convert("L").resize((224, 224))
+    tensor = transforms.ToTensor()(image).unsqueeze(0)
+    return tensor
 
-# Generate report per region
+# Group predictions
+def group_by_region(files):
+    model = load_model()
+    grouped = defaultdict(list)
+    for file in files:
+        image = Image.open(file)
+        input_tensor = preprocess(image)
+        with torch.no_grad():
+            outputs = model(input_tensor)
+            probs = torch.softmax(outputs, dim=1)[0]
+            top_probs, top_labels = torch.topk(probs, 3)
+            predictions = [(REGION_LABELS[i], float(p)) for i, p in zip(top_labels, top_probs) if float(p) >= CONFIDENCE_THRESHOLD]
+        for label in predictions:
+            grouped[label[0]].append((file.name, image.copy(), predictions))
+    return grouped
+
+# Region report stub
 def region_report(region):
-    return f"Findings consistent with standard interpretation for {region}. No acute abnormalities noted."
+    return f"Report for {region}: radiographic findings placeholder."
 
-# Streamlit UI
-st.set_page_config(layout="wide")
+# Streamlit interface
 st.title("🧠 RheumaView Region Classifier")
 st.caption("(Lite Debug Mode)")
 
-uploaded_files = st.file_uploader("Upload X-ray images", type=["png", "jpg", "jpeg", "webp", "tif", "tiff"], accept_multiple_files=True)
+st.markdown("### Upload X-ray images")
+uploaded_files = st.file_uploader(
+    "Drag and drop files here",
+    accept_multiple_files=True,
+    type=["png", "jpg", "jpeg", "webp", "tif", "tiff"]
+)
 
 if uploaded_files:
-    model = load_model()
-    grouped = defaultdict(list)
-
-    for file in uploaded_files:
-        image = Image.open(file)
-        input_tensor = preprocess(image)
-        predictions = predict_region(image)  # Pass PIL image directly
-        top_label, top_conf = predictions[0]
-
-        if top_conf < CONFIDENCE_THRESHOLD:
-            st.warning(f"Low confidence prediction for {file.name}. Please verify region.")
-        grouped[top_label].append((file.name, image.copy(), predictions))
-
+    grouped = group_by_region(uploaded_files)
     st.markdown("---")
-    st.subheader("📂 Grouped Files by Region")
+    st.subheader("📁 Grouped Files by Region")
     displayed_files = set()
     for region, entries in grouped.items():
         unique_entries = [e for e in entries if e[0] not in displayed_files]
@@ -80,21 +84,13 @@ if uploaded_files:
                 st.image(img, caption=f"{fname}", width=180)
                 st.caption(", ".join([f"{lbl} ({conf:.2f})" for lbl, conf in preds]))
 
-# EMR Report Generator
+# EMR Report Generator – always visible
 st.markdown("---")
 st.subheader("📝 Generate Report by Region")
 selected_region = st.selectbox("Choose region to generate report for:", REGION_LABELS)
 
 if st.button("Generate EMR Summary"):
     report = region_report(selected_region)
-    st.success(f"📝 EMR Summary for **{selected_region}**:
+    st.success(f"📋 EMR Summary for **{selected_region}**:
 
 {report}")
-
-# Optional: General report generator (REQUIRES READY flag logic to activate)
-if uploaded_files:
-    st.subheader("📄 Report Generator")
-    if st.button("✅ READY – Generate Report"):
-        st.success("📋 Report generation coming soon.")
-else:
-    st.info("No files uploaded.")
