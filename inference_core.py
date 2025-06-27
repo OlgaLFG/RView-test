@@ -27,3 +27,5 @@ def predict_region(image: Image.Image):
     predicted_class = outputs.argmax().item()
     predicted_label = class_names[predicted_class % len(class_names)]  # Demo labeling
     return predicted_label
+def region_report(region_name):
+    return f"Auto-generated EMR summary for {region_name}. [This is a placeholder.]"
