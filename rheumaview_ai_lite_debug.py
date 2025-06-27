@@ -34,12 +34,13 @@ def load_model():
     templates = {
         "Cervical Spine": "Straightening of cervical lordosis. Degenerative spondylosis suspected.",
         "Thoracic Spine": "No acute findings in thoracic spine. Vertebral body heights preserved.",
-        "Lumbar Spine": "Lumbar spine with facet sclerosis and disc space narrowing at L4–L5.",
+        "Lumbar Spine": "Lumbar spine with facet sclerosis and disc space narrowing at L4-L5.",
         "Feet": "No erosions or joint space narrowing noted in forefoot views.",
         "Pelvis / SI Joints": "Sacroiliac joints are symmetric. Mild subchondral sclerosis without erosions.",
         "Hands": "No erosions or joint space narrowing. Bone mineralization is preserved.",
     }
     return templates.get(region_label, "No region-specific findings available.")
+
 
 def predict_region(image):
     model = load_model()
