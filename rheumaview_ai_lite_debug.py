@@ -1,96 +1,80 @@
 import streamlit as st
-from collections import defaultdict
-from PIL import Image
 import torch
-import torchvision.transforms as transforms
+from torchvision import transforms
+from PIL import Image
+import io
 from inference_core import predict_region
+from docx import Document
+from datetime import datetime
 
-# Dummy model for grayscale images (1 channel)
-class DummyRegionModel(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.flatten = torch.nn.Flatten()
-        self.fc = torch.nn.Linear(1 * 224 * 224, 10)
-
-    def forward(self, x):
-        return self.fc(self.flatten(x))
-
-# Load model (CPU only, dummy weights)
-def load_model():
-    model = DummyRegionModel()
-    model.load_state_dict(torch.load("region_model.pt", map_location="cpu"))
-    model.eval()
-    return model
-
-# Labels and threshold
-REGION_LABELS = [
-    "Cervical Spine", "Thoracic Spine", "Lumbar Spine",
-    "Pelvis/SI/Sacrum", "Hands/Wrists", "Elbows", "Shoulders",
-    "Hips", "Knees", "Ankles/Feet", "Long Bones"
+# Class names mapping
+CLASS_NAMES = [
+    "Cervical Spine", "Thoracic Spine", "Lumbar Spine", "Pelvis/SI Joints",
+    "Hips", "Knees", "Ankles", "Feet",
+    "Shoulders", "Elbows", "Wrists", "Hands", "Long bones"
 ]
-CONFIDENCE_THRESHOLD = 0.65
 
-# Image transform
-def preprocess(image):
-    image = image.convert("L").resize((224, 224))
-    tensor = transforms.ToTensor()(image).unsqueeze(0)
-    return tensor
+st.set_page_config(page_title="RheumaView Lite", layout="centered")
+st.title("🟩 RheumaView™ Lite")
+st.caption("Curated by Dr. Olga Goodman • Region classifier demo")
 
-# Group predictions
-def group_by_region(files):
-    model = load_model()
-    grouped = defaultdict(list)
-    for file in files:
-        image = Image.open(file)
-        input_tensor = preprocess(image)
-        with torch.no_grad():
-            outputs = model(input_tensor)
-            probs = torch.softmax(outputs, dim=1)[0]
-            top_probs, top_labels = torch.topk(probs, 3)
-            predictions = [(REGION_LABELS[i], float(p)) for i, p in zip(top_labels, top_probs) if float(p) >= CONFIDENCE_THRESHOLD]
-        for label in predictions:
-            grouped[label[0]].append((file.name, image.copy(), predictions))
-    return grouped
+uploaded_files = st.file_uploader("Upload X-ray images", accept_multiple_files=True, type=["jpg", "jpeg", "png", "bmp", "tiff", "webp"])
 
-# Region report stub
-def region_report(region):
-    return f"Report for {region}: radiographic findings placeholder."
-
-# Streamlit interface
-st.title("🧠 RheumaView Region Classifier")
-st.caption("(Lite Debug Mode)")
-
-st.markdown("### Upload X-ray images")
-uploaded_files = st.file_uploader(
-    "Drag and drop files here",
-    accept_multiple_files=True,
-    type=["png", "jpg", "jpeg", "webp", "tif", "tiff"]
-)
+results = []
 
 if uploaded_files:
-    grouped = group_by_region(uploaded_files)
-    st.markdown("---")
-    st.subheader("📁 Grouped Files by Region")
-    displayed_files = set()
-    for region, entries in grouped.items():
-        unique_entries = [e for e in entries if e[0] not in displayed_files]
-        if not unique_entries:
-            continue
-        st.markdown(f"**{region}** – {len(unique_entries)} file(s)")
-        cols = st.columns(3)
-        for i, (fname, img, preds) in enumerate(unique_entries):
-            displayed_files.add(fname)
-            with cols[i % 3]:
-                st.image(img, caption=f"{fname}", width=180)
-                st.caption(", ".join([f"{lbl} ({conf:.2f})" for lbl, conf in preds]))
+    st.subheader("Image Preview and Predictions")
+    for file in uploaded_files:
+        image = Image.open(file).convert("L")
+        st.image(image, caption=f"Preview: {file.name}", width=300)
 
-# EMR Report Generator – always visible
-st.markdown("---")
-st.subheader("📝 Generate Report by Region")
-selected_region = st.selectbox("Choose region to generate report for:", REGION_LABELS)
+        # Image preprocessing
+        transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+        tensor = transform(image).unsqueeze(0)
 
+        # Prediction
+        top3 = predict_region(tensor)
+
+        top_label = CLASS_NAMES[top3[0][0]]
+        st.markdown(f"**Top prediction:** {top_label}")
+        st.markdown("**Confidence breakdown:**")
+        for idx, prob in top3:
+            st.markdown(f"- {CLASS_NAMES[idx]}: {prob:.2%}")
+
+        results.append((file.name, top3))
+
+# Generate EMR summary
 if st.button("Generate EMR Summary"):
-    report = region_report(selected_region)
-    st.success(f"📋 EMR Summary for **{selected_region}**:
+    emr_text = []
+    region_count = {}
+    for _, top3 in results:
+        top_label = CLASS_NAMES[top3[0][0]]
+        region_count[top_label] = region_count.get(top_label, 0) + 1
 
-{report}")
+    for region, count in region_count.items():
+        emr_text.append(f"{region} – {count} view(s)")
+
+    emr_summary = "Study includes: " + "; ".join(emr_text) + "."
+    st.success("EMR Summary:")
+    st.code(emr_summary, language="markdown")
+
+# Generate report
+if st.button("Generate Report (.docx)"):
+    doc = Document()
+    doc.add_heading("RheumaView™ Radiology Report", level=1)
+    doc.add_paragraph("Curated by Dr. Olga Goodman")
+    doc.add_paragraph(f"Date: {datetime.today().strftime('%Y-%m-%d')}")
+
+    for file_name, top3 in results:
+        doc.add_heading(file_name, level=2)
+        for idx, prob in top3:
+            doc.add_paragraph(f"{CLASS_NAMES[idx]}: {prob:.2%}")
+
+    output_path = "/mnt/data/rheumaview_report.docx"
+    doc.save(output_path)
+    st.success("Report generated successfully!")
+    st.download_button(label="Download Report", file_name="rheumaview_report.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", data=open(output_path, "rb").read())
