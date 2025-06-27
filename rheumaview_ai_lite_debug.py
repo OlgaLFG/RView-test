@@ -1,9 +1,9 @@
-
 import streamlit as st
 from PIL import Image
 from collections import defaultdict
 import torch
 import torchvision.transforms as transforms
+import torch.nn as nn
 
 REGION_LABELS = [
     "Cervical Spine", "Thoracic Spine", "Lumbar Spine",
@@ -12,9 +12,6 @@ REGION_LABELS = [
 ]
 
 CONFIDENCE_THRESHOLD = 0.65
-
-import torch
-import torch.nn as nn
 
 class DummyRegionModel(nn.Module):
     def __init__(self):
@@ -63,7 +60,20 @@ st.set_page_config(page_title="RheumaView v4.2-region-ai", page_icon="🧠", lay
 st.title("🧠 RheumaView-lite v4.2 Region Classifier")
 st.markdown("Visual AI classifier with fallback and AI/manual reporting.")
 
-uploaded_files = st.file_uploader("Upload X-rays", type=["jpg", "jpeg", "png", "webp", "tif"], accept_multiple_files=True)
+# Reset uploaded files button
+st.markdown("### 🔁 File Upload Control")
+if st.button("🔄 Reset Uploaded Files"):
+    if "upload" in st.session_state:
+        del st.session_state["upload"]
+    st.experimental_rerun()
+
+# Upload area
+uploaded_files = st.file_uploader(
+    "Upload X-rays",
+    type=["jpg", "jpeg", "png", "webp", "tif", "tiff"],
+    accept_multiple_files=True,
+    key="upload"
+)
 
 if "region_override" not in st.session_state:
     st.session_state.region_override = {}
@@ -86,7 +96,6 @@ if uploaded_files:
 
         grouped[region].append((file.name, image.copy(), predictions))
 
-    # Визуализация — только одно изображение на файл
     displayed_files = set()
     for region, entries in grouped.items():
         unique_entries = [e for e in entries if e[0] not in displayed_files]
