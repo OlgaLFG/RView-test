@@ -134,7 +134,7 @@ else:
     selected_region = st.selectbox("Choose region to generate report for:", REGION_LABELS)
 
     if st.button("Generate EMR Summary"):
-    report = region_report(selected_region)
-    st.success(f"📝 EMR Summary for **{selected_region}**:\n\n{report}")
+        report = region_report(selected_region)
+        st.success(f"📝 EMR Summary for **{selected_region}**:\n\n{report}")
     
 
