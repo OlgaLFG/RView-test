@@ -26,8 +26,8 @@ def load_model():
 # Labels and threshold
 REGION_LABELS = [
     "Cervical Spine", "Thoracic Spine", "Lumbar Spine",
-    "Sacrum/SI Joints", "Hands", "Feet", "Shoulders",
-    "Hips", "Knees", "Ankles"
+    "Pelvis/SI/Sacrum", "Hands/Wrists", "Elbows", "Shoulders",
+    "Hips", "Knees", "Ankles/Feet", "Long Bones"
 ]
 CONFIDENCE_THRESHOLD = 0.65
 
