@@ -19,7 +19,7 @@ class DummyRegionModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(3 * 224 * 224, 10)
+        self.fc = nn.Linear(1 * 224 * 224, 10)
 
     def forward(self, x):
         return self.fc(self.flatten(x))
