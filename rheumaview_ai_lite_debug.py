@@ -6,8 +6,8 @@ from PIL import Image
 from inference_core import predict_region
 from docx import Document
 from datetime import datetime
+from io import BytesIO
 
-# Custom class labels
 CLASS_NAMES = [
     "Cervical Spine", "Thoracic Spine", "Lumbar Spine", "Pelvis/SI Joints/ Sacrum", 
     "Hips", "Knees", "Ankles/Feet", 
@@ -29,24 +29,26 @@ if uploaded_files:
     for file in uploaded_files:
         image = Image.open(file).convert("L")
         st.image(image, caption=f"Preview: {file.name}", width=120)
-
-        # Convert to RGB to match model expectation
         image_rgb = image.convert("RGB")
+
         try:
             top3 = predict_region(image_rgb)
-            top_label = CLASS_NAMES[top3[0][0]]
-            st.markdown(f"**Top prediction:** {top_label}")
-            st.markdown("**Confidence breakdown:**")
-            for idx, prob in top3:
-                st.markdown(f"- {CLASS_NAMES[idx]}: {prob:.2%}")
-            manual = st.selectbox(f"Override region for {file.name}?", CLASS_NAMES, index=top3[0][0], key=file.name)
+            if isinstance(top3, list) and isinstance(top3[0], (list, tuple)) and isinstance(top3[0][0], int):
+                top_label = CLASS_NAMES[top3[0][0]]
+                st.markdown(f"**Top prediction:** {top_label}")
+                st.markdown("**Confidence breakdown:**")
+                for idx, prob in top3:
+                    st.markdown(f"- {CLASS_NAMES[idx]}: {prob:.2%}")
+                manual = st.selectbox(f"Override region for {file.name}?", CLASS_NAMES, index=top3[0][0], key=file.name)
+            else:
+                raise ValueError("Unexpected prediction output format")
         except Exception as e:
             st.error(f"Prediction failed for {file.name}: {e}")
             manual = st.selectbox(f"Manual region for {file.name} (prediction failed)", CLASS_NAMES, key=file.name)
 
         results.append((file.name, manual))
 
-# Generate EMR Summary
+# EMR summary
 if st.button("Generate EMR Summary"):
     emr_text = []
     region_count = {}
@@ -60,7 +62,7 @@ if st.button("Generate EMR Summary"):
     st.success("EMR Summary:")
     st.code(emr_summary, language="markdown")
 
-# Generate report
+# Generate .docx safely
 if st.button("Generate Report (.docx)"):
     doc = Document()
     doc.add_heading("RheumaView™ Radiology Report", level=1)
@@ -78,7 +80,11 @@ if st.button("Generate Report (.docx)"):
         for fname in files:
             doc.add_paragraph(f"- {fname}")
 
-    output_path = "/mnt/data/rheumaview_report.docx"
-    doc.save(output_path)
+    output_stream = BytesIO()
+    doc.save(output_stream)
+    output_stream.seek(0)
+
     st.success("Report generated successfully!")
-    st.download_button(label="Download Report", file_name="rheumaview_report.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", data=open(output_path, "rb").read())
+    st.download_button(label="Download Report", file_name="rheumaview_report.docx",
+                       mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                       data=output_stream.read())
