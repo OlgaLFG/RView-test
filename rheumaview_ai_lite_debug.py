@@ -115,9 +115,9 @@ if top_conf < CONFIDENCE_THRESHOLD:
     st.session_state.region_override[file.name] = "manual"
 
         
-        else:
-            region = top_label
-            st.session_state.region_override[file.name] = "AI"
+    else:
+        region = top_label
+        st.session_state.region_override[file.name] = "AI"
 
         grouped[region].append((file.name, image.copy(), predictions))
 
