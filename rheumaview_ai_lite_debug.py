@@ -37,9 +37,10 @@ def load_model():
         "Lumbar Spine": "Lumbar spine with facet sclerosis and disc space narrowing at L4-L5.",
         "Feet": "No erosions or joint space narrowing noted in forefoot views.",
         "Pelvis / SI Joints": "Sacroiliac joints are symmetric. Mild subchondral sclerosis without erosions.",
-        "Hands": "No erosions or joint space narrowing. Bone mineralization is preserved.",
+        "Hands": "No erosions or joint space narrowing. Bone mineralization is preserved."
     }
     return templates.get(region_label, "No region-specific findings available.")
+
 
 
 def predict_region(image):
