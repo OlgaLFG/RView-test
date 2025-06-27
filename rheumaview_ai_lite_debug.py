@@ -67,28 +67,49 @@ if uploaded_files:
     
     
     
+
     for file in uploaded_files:
         image = Image.open(file).convert("L")
         st.image(image, caption=f"Preview: {file.name}", width=120)
         image_rgb = image.convert("RGB")
 
-        try:
-            top3 = predict_region(image_rgb)
-            if isinstance(top3, list) and isinstance(top3[0], (list, tuple)) and isinstance(top3[0][0], int):
-                top_label = CLASS_NAMES[top3[0][0]]
-                st.markdown(f"**Top prediction:** {top_label}")
-                st.markdown("**Confidence breakdown:**")
-                for idx, prob in top3:
-                    st.markdown(f"- {CLASS_NAMES[idx]}: {prob:.2%}")
-                manual = st.selectbox(f"Override region for {file.name}?", CLASS_NAMES, index=top3[0][0], key=file.name)
-            else:
-                raise ValueError("Unexpected prediction output format")
-        except Exception as e:
-            st.error(f"Prediction failed for {file.name}: {e}")
-            manual = st.selectbox(f"Manual region for {file.name} (prediction failed)", CLASS_NAMES, key=file.name)
+        if enable_ai_prediction:
+            try:
+                top3 = predict_region(image_rgb)
+                if isinstance(top3, list) and isinstance(top3[0], (list, tuple)) and isinstance(top3[0][0], int):
+                    top_label = CLASS_NAMES[top3[0][0]]
+                    st.markdown(f"**Top prediction:** {top_label}")
+                    st.markdown("**Confidence breakdown:**")
+                    for idx, prob in top3:
+                        st.markdown(f"- {CLASS_NAMES[idx]}: {prob:.2%}")
+                    manual = st.selectbox(
+                        f"Override region for {file.name}?",
+                        CLASS_NAMES,
+                        index=top3[0][0],
+                        key=f"{file.name}_ai"
+                    )
+                else:
+                    raise ValueError("Unexpected prediction output format")
+            except Exception as e:
+                st.error(f"Prediction failed for {file.name}: {e}")
+                manual = st.selectbox(
+                    f"Manual region for {file.name} (prediction failed)",
+                    CLASS_NAMES,
+                    key=f"{file.name}_failed"
+                )
+        else:
+            # manual-only mode
+            manual = st.selectbox(
+                f"Manual region for {file.name}",
+                CLASS_NAMES,
+                key=f"{file.name}_manual"
+            )
 
         results.append((file.name, manual))
-
+    
+    
+    
+    
 # EMR summary
 if st.button("Generate EMR Summary"):
     emr_text = []
