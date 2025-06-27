@@ -132,3 +132,11 @@ else:
     st.info("No files uploaded.")
     st.markdown("### 📄 Generate Report by Region")
     selected_region = st.selectbox("Choose region to generate report for:", REGION_LABELS)
+
+    
+st.markdown("---")
+st.subheader("📝 Generate Report by Region")
+selected_region = st.selectbox("Choose region to generate report for:", REGION_LABELS)
+if st.button("Generate EMR Summary"):
+    st.success(f"Report for **{selected_region}** will be generated.")
+
