@@ -116,8 +116,7 @@ else:
     st.session_state.region_override[file.name] = "AI"
 
         
-
-        grouped[region].append((file.name, image.copy(), predictions))
+    grouped[region].append((file.name, image.copy(), predictions))
 
     displayed_files = set()
     for region, entries in grouped.items():
