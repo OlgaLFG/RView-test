@@ -16,7 +16,7 @@ class DummyRegionModel(torch.nn.Module):
         return self.fc(self.flatten(x))
 
 # Load model (CPU only, dummy weights)
-@st.cache_resource
+
 def load_model():
     model = DummyRegionModel()
     model.load_state_dict(torch.load("region_model.pt", map_location="cpu"))
