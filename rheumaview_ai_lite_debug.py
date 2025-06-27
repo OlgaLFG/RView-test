@@ -41,8 +41,6 @@ def load_model():
     }
     return templates.get(region_label, "No region-specific findings available.")
 
-
-
 def predict_region(image):
     model = load_model()
     preprocess = transforms.Compose([
