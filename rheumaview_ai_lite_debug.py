@@ -99,8 +99,6 @@ if uploaded_files:
         predictions = predict_region(image)
         top_label, top_conf = predictions[0]
 
-
-        
 if top_conf < CONFIDENCE_THRESHOLD:
     col1, col2 = st.columns([1, 3])
     with col1:
@@ -113,11 +111,11 @@ if top_conf < CONFIDENCE_THRESHOLD:
         )
     region = selected
     st.session_state.region_override[file.name] = "manual"
+else:
+    region = top_label
+    st.session_state.region_override[file.name] = "AI"
 
         
-    else:
-        region = top_label
-        st.session_state.region_override[file.name] = "AI"
 
         grouped[region].append((file.name, image.copy(), predictions))
 
