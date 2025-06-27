@@ -118,9 +118,7 @@ if uploaded_files:
 
     if st.button("Generate EMR Summary"):
         report = region_report(selected_region)
-        st.success(f"📄 EMR Summary for **{selected_region}**:
-
-{report}")
+        st.success(f"📄 EMR Summary for **{selected_region}**:\n\n{report}")
 
 else:
     st.subheader("🧾 Report Generator")
