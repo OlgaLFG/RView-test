@@ -12,9 +12,22 @@ REGION_LABELS = [
 
 CONFIDENCE_THRESHOLD = 0.65
 
+import torch
+import torch.nn as nn
+
+class DummyRegionModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.flatten = nn.Flatten()
+        self.fc = nn.Linear(3 * 224 * 224, 10)
+
+    def forward(self, x):
+        return self.fc(self.flatten(x))
+
 @st.cache_resource
 def load_model():
-    model = torch.load("region_model.pt", map_location=torch.device('cpu'))
+    model = DummyRegionModel()
+    model.load_state_dict(torch.load("region_model.pt", map_location="cpu"))
     model.eval()
     return model
 
