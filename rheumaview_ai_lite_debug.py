@@ -30,16 +30,7 @@ def load_model():
     model.load_state_dict(torch.load("region_model.pt", map_location="cpu"))
     model.eval()
     return model
-
-def predict_region(image):
-    model = load_model()
-    preprocess = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.Grayscale(),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5], std=[0.5])
-    ])
-    def region_report(region_label):
+ def region_report(region_label):
     templates = {
         "Cervical Spine": "Straightening of cervical lordosis. Degenerative spondylosis suspected.",
         "Thoracic Spine": "No acute findings in thoracic spine. Vertebral body heights preserved.",
@@ -49,6 +40,16 @@ def predict_region(image):
         "Hands": "No erosions or joint space narrowing. Bone mineralization is preserved.",
     }
     return templates.get(region_label, "No region-specific findings available.")
+
+def predict_region(image):
+    model = load_model()
+    preprocess = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.Grayscale(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5], std=[0.5])
+    ])
+   
 
     input_tensor = preprocess(image).unsqueeze(0)
     with torch.no_grad():
@@ -101,10 +102,11 @@ if uploaded_files:
             for fname, _, _ in entries:
                 src = st.session_state.region_override.get(fname, "AI")
                 st.markdown(f"  - {fname} — source: {src}")
+                st.markdown(f"_{region_report(region)}_") 
 else:
     st.info("No files uploaded.")
     st.markdown("### 📄 Generate Report by Region")
-selected_region = st.selectbox("Choose region to generate report for:", REGION_LABELS)
+    selected_region = st.selectbox("Choose region to generate report for:", REGION_LABELS)
 
 if st.button("Generate EMR Summary"):
     report = region_report(selected_region)
