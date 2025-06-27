@@ -61,11 +61,13 @@ st.title("🧠 RheumaView-lite v4.2 Region Classifier")
 st.markdown("Visual AI classifier with fallback and AI/manual reporting.")
 
 # Reset uploaded files
-st.markdown("### 🔁 File Upload Control")
-if st.button("🔄 Reset Uploaded Files"):
+st.markdown("### 🗂️ File Upload Control")
+if st.button("🔁 Reset Uploaded Files"):
     if "upload" in st.session_state:
         del st.session_state["upload"]
-    st.experimental_rerun()
+        st.rerun() 
+
+
 
 # File upload
 uploaded_files = st.file_uploader(
