@@ -60,14 +60,14 @@ st.set_page_config(page_title="RheumaView v4.2-region-ai", page_icon="🧠", lay
 st.title("🧠 RheumaView-lite v4.2 Region Classifier")
 st.markdown("Visual AI classifier with fallback and AI/manual reporting.")
 
-# Reset uploaded files button
+# Reset uploaded files
 st.markdown("### 🔁 File Upload Control")
 if st.button("🔄 Reset Uploaded Files"):
     if "upload" in st.session_state:
         del st.session_state["upload"]
     st.experimental_rerun()
 
-# Upload area
+# File upload
 uploaded_files = st.file_uploader(
     "Upload X-rays",
     type=["jpg", "jpeg", "png", "webp", "tif", "tiff"],
@@ -78,9 +78,10 @@ uploaded_files = st.file_uploader(
 if "region_override" not in st.session_state:
     st.session_state.region_override = {}
 
-if uploaded_files:
-    grouped = defaultdict(list)
+grouped = defaultdict(list)
+selected_region = REGION_LABELS[0]
 
+if uploaded_files:
     for file in uploaded_files:
         image = Image.open(file)
         predictions = predict_region(image)
@@ -101,19 +102,14 @@ if uploaded_files:
         unique_entries = [e for e in entries if e[0] not in displayed_files]
         if not unique_entries:
             continue
-
         st.subheader(f"{region} — {len(unique_entries)} file(s)")
         cols = st.columns(3)
-
         for i, (fname, img, preds) in enumerate(unique_entries):
             displayed_files.add(fname)
             with cols[i % 3]:
                 st.image(img, caption=fname, width=180)
                 st.markdown(f"**Top prediction:** {preds[0][0]} ({preds[0][1]*100:.1f}%)")
-                st.markdown(
-                    f"*Other:* {preds[1][0]} ({preds[1][1]*100:.1f}%), "
-                    f"{preds[2][0]} ({preds[2][1]*100:.1f}%)"
-                )
+                st.markdown(f"*Other:* {preds[1][0]} ({preds[1][1]*100:.1f}%), {preds[2][0]} ({preds[2][1]*100:.1f}%)")
 
     if st.button("✅ READY – Generate Report"):
         st.subheader("📝 Report Summary")
