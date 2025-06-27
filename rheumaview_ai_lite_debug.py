@@ -125,16 +125,17 @@ if uploaded_files:
                 st.caption(", ".join([f"{lbl} ({conf:.2f})" for lbl, conf in preds]))
 
     st.markdown("---")
-    st.subheader("📝 Report Generator")
-    if st.button("✅ READY – Generate Report"):
-        st.success("📄 Report generation coming soon.")
-else:
-    st.info("No files uploaded.")
-    st.markdown("### 📄 Generate Report by Region")
+    st.subheader("🧠 Generate Report by Region")
     selected_region = st.selectbox("Choose region to generate report for:", REGION_LABELS)
 
     if st.button("Generate EMR Summary"):
         report = region_report(selected_region)
         st.success(f"📝 EMR Summary for **{selected_region}**:\n\n{report}")
-    
+
+    if uploaded_files:
+        st.subheader("🧾 Report Generator")
+        if st.button("✅ READY – Generate Report"):
+            st.success("📄 Report generation coming soon.")
+    else:
+        st.info("No files uploaded.")
 
