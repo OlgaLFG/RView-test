@@ -1,5 +1,18 @@
-
+import zipfile
 import os
+
+# Automatically extract dataset if not already extracted
+zip_path = "region_dataset.zip"
+extract_to = "region_dataset"
+
+if not os.path.exists(extract_to):
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_to)
+    print(f"✅ Extracted to: {extract_to}")
+else:
+    print(f"📁 Already extracted: {extract_to}")
+
+# Import libraries for training
 import torch
 from torch import nn, optim
 from torchvision import models, transforms
@@ -7,24 +20,24 @@ from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
 from datetime import datetime
 
-# Paths
-data_dir = "region_dataset"  # make sure this is populated
+# Dataset and model paths
+data_dir = "region_dataset"
 model_path = "region_model.pt"
 
-# Transforms
+# Image transformations
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize([0.5]*3, [0.5]*3)
 ])
 
-# Dataset and loader
+# Dataset and DataLoader
 dataset = ImageFolder(root=data_dir, transform=transform)
 class_names = dataset.classes
 num_classes = len(class_names)
 loader = DataLoader(dataset, batch_size=16, shuffle=True)
 
-# Model
+# Define model
 model = models.resnet18(pretrained=True)
 model.fc = nn.Linear(model.fc.in_features, num_classes)
 
