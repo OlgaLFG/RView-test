@@ -8,15 +8,16 @@ model.eval()
 
 # Your class names — must match training folder structure and order
 class_names = [
+ 
     "Ankles/Feet",
     "Cervical Spine",
     "Elbows",
     "Hands/Wrists",
     "Hips",
     "Knees",
-    "Long bones",
+    "Long Bones",
     "Lumbar Spine",
-    "Pelvis/SI Joints",
+    "Pelvis/SI/Sacrum",
     "Shoulders",
     "Thoracic Spine"
 ]
