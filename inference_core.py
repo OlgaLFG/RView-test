@@ -2,11 +2,11 @@ import torch
 from torchvision import transforms
 from PIL import Image
 
-# Load pretrained model
-model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
+# Load your trained model from file
+model = torch.load("region_model.pt", map_location=torch.device('cpu'))
 model.eval()
 
-# Example anatomical region labels (editable)
+# Anatomical labels (should match training folders and training order)
 class_names = [
     "Ankles/Feet",
     "Cervical Spine",
@@ -21,23 +21,21 @@ class_names = [
     "Thoracic Spine"
 ]
 
-# Image preprocessing pipeline
+# Preprocessing
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor()
 ])
 
-# Main inference function
-
+# Inference
 def predict_region(image: Image.Image):
     img = transform(image).unsqueeze(0)  # Add batch dimension
     with torch.no_grad():
         outputs = model(img)
-        print("Model output:", outputs)  #
+        print("Model output:", outputs)  # Debug line
     predicted_class = outputs.argmax().item()
-    predicted_label = class_names[predicted_class % len(class_names)]  # Demo labeling
+    predicted_label = class_names[predicted_class]
     return predicted_label
-
 
 def region_report(region_name):
     return f"Auto-generated EMR summary for {region_name}. [This is a placeholder.]"
