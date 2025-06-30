@@ -8,9 +8,17 @@ model.eval()
 
 # Example anatomical region labels (editable)
 class_names = [
-    "Cervical Spine", "Thoracic Spine", "Lumbar Spine", "Pelvis/SI Joints",
-    "Hips", "Knees", "Ankles", "Feet",
-    "Shoulders", "Elbows", "Wrists", "Hands", "Long bones" 
+    "Ankles/Feet",
+    "Cervical Spine",
+    "Elbows",
+    "Hands/Wrists",
+    "Hips",
+    "Knees",
+    "Long bones",
+    "Lumbar Spine",
+    "Pelvis/SI Joints",
+    "Shoulders",
+    "Thoracic Spine"
 ]
 
 # Image preprocessing pipeline
