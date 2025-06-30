@@ -2,11 +2,11 @@ import torch
 from torchvision import transforms
 from PIL import Image
 
-# Load your trained model from file
+# Load your own trained model from file
 model = torch.load("region_model.pt", map_location=torch.device('cpu'))
 model.eval()
 
-# Anatomical labels (should match training folders and training order)
+# Your class names — must match training folder structure and order
 class_names = [
     "Ankles/Feet",
     "Cervical Spine",
@@ -27,7 +27,7 @@ transform = transforms.Compose([
     transforms.ToTensor()
 ])
 
-# Inference
+# Inference function
 def predict_region(image: Image.Image):
     img = transform(image).unsqueeze(0)  # Add batch dimension
     with torch.no_grad():
