@@ -28,12 +28,16 @@ transform = transforms.Compose([
 ])
 
 # Main inference function
+
 def predict_region(image: Image.Image):
     img = transform(image).unsqueeze(0)  # Add batch dimension
     with torch.no_grad():
         outputs = model(img)
+        print("Model output:", outputs)  #
     predicted_class = outputs.argmax().item()
     predicted_label = class_names[predicted_class % len(class_names)]  # Demo labeling
     return predicted_label
+
+
 def region_report(region_name):
     return f"Auto-generated EMR summary for {region_name}. [This is a placeholder.]"
