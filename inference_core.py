@@ -2,8 +2,13 @@ import torch
 from torchvision import transforms
 from PIL import Image
 
-# Load your own trained model from file
-model = torch.load("region_model.pt", map_location=torch.device('cpu'))
+import torchvision.models as models
+
+model = models.resnet18()  # арх-ра использовалась в обучении
+model.fc = torch.nn.Linear(model.fc.in_features, 11)  # 11 классов
+
+state_dict = torch.load("region_model.pt", map_location=torch.device('cpu'))
+model.load_state_dict(state_dict)
 model.eval()
 
 # Your class names — must match training folder structure and order
