@@ -14,17 +14,17 @@ model.eval()
 # Your class names — must match training folder structure and order
 class_names = [
  
-    "Ankles/Feet",
-    "Cervical Spine",
+    "AnklesFeet",
+    "CervicalSpine",
     "Elbows",
-    "Hands/Wrists",
+    "HandsWrists",
     "Hips",
     "Knees",
-    "Long Bones",
-    "Lumbar Spine",
-    "Pelvis/SI/Sacrum",
+    "LongBones",
+    "LumbarSpine",
+    "PelvisSISacrum",
     "Shoulders",
-    "Thoracic Spine"
+    "ThoracicSpine"
 ]
 
 # Preprocessing
