@@ -51,4 +51,6 @@ def predict_region_from_path(image_path: str) -> Tuple[str, float, List[Tuple[st
     image = Image.open(image_path).convert("RGB")
     return predict_region(image)
 
-# ===== Option
+# ===== Optional: Placeholder for EMR summary =====
+def region_report(region_name: str) -> str:
+    return f"Auto-generated EMR summary for {region_name}. [This is a placeholder.]"
