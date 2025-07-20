@@ -18,8 +18,8 @@ class_names = [
     "ThoracicSpine"
 ]
 
-# ===== Load the trained model =====
-model = torch.load("region_model.pt", map_location=torch.device("cpu"))
+# ===== Load the trained model (PyTorch 2.6+ compatibility) =====
+model = torch.load("region_model.pt", map_location=torch.device("cpu"), weights_only=False)
 model.eval()
 
 # ===== Image preprocessing =====
